@@ -1,0 +1,150 @@
+#!/usr/bin/env python
+# vim:fileencoding=utf-8
+import datetime
+from urllib.parse import urljoin
+
+from calibre.web.feeds.news import BasicNewsRecipe
+
+
+class renmindaily(BasicNewsRecipe):
+    title = '人民日报'
+    description = '抓取人民日报电子版各版面新闻'
+    language = 'zh'
+    category = 'News, China'
+    publisher = 'paper.people.com.cn'
+    __author__ = 'suchao.personal@gmail.com'
+
+    no_stylesheets = True
+    remove_javascript = True
+    max_articles_per_feed = 999
+    compress_news_images = True
+    simultaneous_downloads = 5
+    timefmt = '[%Y年 %m月 %d日 星期%a]'
+
+    BASE = 'http://paper.people.com.cn'
+
+    keep_only_tags = [
+        dict(name='div', attrs={'class': 'article'}),
+    ]
+
+    remove_tags = [
+        dict(name='div', attrs={'id': 'articleContent'}),
+        dict(name='div', attrs={'class': 'art-btn'}),
+        dict(name='style'),
+        dict(name='script'),
+    ]
+
+    # ---------- 日期 / URL 工具 ----------
+
+    @staticmethod
+    def _beijing_now():
+        # 用 UTC+8 计算北京时间，避免机器时区不同
+        return datetime.datetime.utcnow() + datetime.timedelta(hours=8)
+
+    def _build_urls(self, date):
+        ym = date.strftime('%Y%m')   # 202606
+        dd = date.strftime('%d')     # 29
+        layout_prefix = (
+            self.BASE + '/rmrb/pc/layout/' + ym + '/' + dd + '/'
+        )
+        cover_url = layout_prefix + 'node_01.html'
+        return layout_prefix, cover_url
+
+    def _resolve_date_and_urls(self):
+        """先试今天，打不开再试昨天。返回 (date, layout_prefix, cover_url)。"""
+        now = self._beijing_now()
+        for delta in (0, 1):
+            date = now - datetime.timedelta(days=delta)
+            layout_prefix, cover_url = self._build_urls(date)
+            try:
+                soup = self.index_to_soup(cover_url)
+            except Exception:
+                soup = None
+            if soup is not None and soup.find('a', id='pageLink'):
+                if delta:
+                    self.log('今天头版还没出，回退到 %s' %
+                             date.strftime('%Y-%m-%d'))
+                return date, layout_prefix, cover_url
+        return None, None, None
+
+    # ---------- 标题 ----------
+
+    def get_title(self, link):
+        return (link.get_text(strip=True)
+                .replace('\n', ' ')
+                .replace('\u3000', ' '))
+
+    # ---------- 封面 ----------
+
+    def get_cover_url(self):
+        _, _, cover_url = self._resolve_date_and_urls()
+        if cover_url is None:
+            return None
+        soup = self.index_to_soup(cover_url)
+        if soup is None:
+            return None
+        img = soup.find('img', width='400')
+        if img and img.get('src'):
+            return urljoin(cover_url, img['src'])
+        return None
+
+    # ---------- 索引 ----------
+
+    def parse_index(self):
+        date, layout_prefix, cover_url = self._resolve_date_and_urls()
+        if cover_url is None:
+            self.log('今天和昨天的头版都打不开，放弃。')
+            return []
+
+        self.log('抓取日期: %s' % date.strftime('%Y-%m-%d'))
+
+        soup = self.index_to_soup(cover_url)
+        if soup is None:
+            return []
+
+        # 版面列表：div.swiper-slide > a#pageLink
+        page_links = soup.find_all('a', id='pageLink')
+        if not page_links:
+            page_links = soup.select('div.swiper-slide a')
+        if not page_links:
+            self.log('未找到版面列表')
+            return []
+
+        articles = []
+        seen = set()
+        for plink in page_links:
+            href = plink.get('href')
+            if not href or 'pdf' in href.lower():
+                continue
+
+            page_url = urljoin(layout_prefix, href)
+            page_soup = self.index_to_soup(page_url)
+            if page_soup is None:
+                continue
+
+            news_div = page_soup.find('div', class_='news')
+            if news_div is None:
+                news_div = page_soup.find('ul', class_='news-list')
+            if news_div is None:
+                self.log('版面 %s 未找到文章列表' % page_url)
+                continue
+
+            for a in news_div.find_all('a'):
+                art_href = a.get('href')
+                if not art_href:
+                    continue
+                if 'layout/' in art_href or art_href.startswith('#'):
+                    continue
+                title = self.get_title(a)
+                if not title:
+                    continue
+                art_url = urljoin(page_url, art_href)
+                if art_url in seen:
+                    continue
+                seen.add(art_url)
+                articles.append({'title': title, 'url': art_url})
+
+        if not articles:
+            self.log('没有抓到任何文章')
+            return []
+        return [('人民日报', articles)]
