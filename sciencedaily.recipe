@@ -1,0 +1,26 @@
+﻿#!/usr/bin/env python
+# vim:fileencoding=utf-8
+from calibre.web.feeds.news import BasicNewsRecipe
+
+class ScienceDaily(BasicNewsRecipe):
+    title = 'ScienceDaily'
+    description = 'Daily science news'
+    language = 'en'
+    no_stylesheets = True
+    remove_javascript = True
+    use_embedded_content = True
+    max_articles_per_feed = 10
+    oldest_article = 3
+    timefmt = '[%a, %d %b %Y]'
+
+    feeds = [
+        ('Top News', 'https://www.sciencedaily.com/rss/top.xml'),
+        ('All News', 'https://www.sciencedaily.com/rss/all.xml'),
+        ('Strange & Offbeat', 'https://www.sciencedaily.com/rss/strange_offbeat.xml'),
+    ]
+
+    remove_tags = [
+        dict(name='script'),
+        dict(name='style'),
+        dict(name='div', attrs={'class': 'ad'}),
+    ]
