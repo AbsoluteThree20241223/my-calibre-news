@@ -15,5 +15,4 @@ class FinanceKnowledge(BasicNewsRecipe):
 
     feeds = [
         ('金十数据·快讯', 'https://rsshub.rssforever.com/jin10'),
-        ('华尔街见闻·快讯', 'https://rsshub.rssforever.com/wallstreetcn/live'),
     ]
