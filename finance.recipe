@@ -9,8 +9,8 @@ class FinanceKnowledge(BasicNewsRecipe):
     no_stylesheets = True
     remove_javascript = True
     use_embedded_content = True
-    max_articles_per_feed = 30
-    oldest_article = 7
+    max_articles_per_feed = 100
+    oldest_article = 1
     timefmt = '[%Y年 %m月 %d日 星期%a]'
 
     feeds = [
