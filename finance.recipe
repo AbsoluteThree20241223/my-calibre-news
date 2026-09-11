@@ -14,6 +14,6 @@ class FinanceKnowledge(BasicNewsRecipe):
     timefmt = '[%Y年 %m月 %d日 星期%a]'
 
     feeds = [
-        ('金十数据·快讯', 'https://rsshub.app/jin10'),
-        ('华尔街见闻·快讯', 'https://rsshub.app/wallstreetcn/live'),
+        ('金十数据·快讯', 'https://rsshub.rssforever.com/jin10'),
+        ('华尔街见闻·快讯', 'https://rsshub.rssforever.com/wallstreetcn/live'),
     ]
