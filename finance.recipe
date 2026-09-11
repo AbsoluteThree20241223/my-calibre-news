@@ -6,36 +6,14 @@ class FinanceKnowledge(BasicNewsRecipe):
     title = '财经知识'
     description = '每日财经快讯'
     language = 'zh'
-    category = 'News, Finance'
-    __author__ = 'your_email@example.com'
-
     no_stylesheets = True
     remove_javascript = True
-    max_articles_per_feed = 20
+    use_embedded_content = True
+    max_articles_per_feed = 30
     oldest_article = 7
-    compress_news_images = True
-    simultaneous_downloads = 3
     timefmt = '[%Y年 %m月 %d日 星期%a]'
 
     feeds = [
-        ('财联社·电报', 'https://rsshub.app/cls/telegraph'),
-        ('华尔街见闻·快讯', 'https://rsshub.app/wallstreetcn/live'),
         ('金十数据·快讯', 'https://rsshub.app/jin10'),
-        ('同花顺·快讯', 'https://rsshub.app/10jqka/realtime'),
-        ('东方财富·研报', 'https://rsshub.app/eastmoney/report'),
-    ]
-
-    keep_only_tags = [
-        dict(name='div', attrs={'class': 'rich_media_content'}),
-        dict(name='div', attrs={'id': 'js_content'}),
-        dict(name='div', attrs={'class': 'article-content'}),
-        dict(name='div', attrs={'class': 'post-content'}),
-        dict(name='div', attrs={'class': 'entry-content'}),
-    ]
-
-    remove_tags = [
-        dict(name='script'),
-        dict(name='style'),
-        dict(name='div', attrs={'class': 'ad'}),
-        dict(name='div', attrs={'class': 'comment'}),
+        ('华尔街见闻·快讯', 'https://rsshub.app/wallstreetcn/live'),
     ]
