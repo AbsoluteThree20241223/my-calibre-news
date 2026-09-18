@@ -126,6 +126,9 @@ jobs:
       - name: Sending Ebook
         if: ${{ success() }}
         run: |
+          # 读取TO变量，按英文逗号分割为收件人数组
+          IFS=',' read -ra recipients <<< "$to"
+          # 遍历所有生成好的电子书
           while read -d '' ebook_path; do
             filename="$(basename "$ebook_path")"
             title="${filename%.*}"
@@ -134,10 +137,16 @@ jobs:
               echo "Size exceeds the limitation: $filename (${file_size}MB)"
               continue
             fi
-            echo "Sending: \"$filename\""
-            calibre-smtp -a "$ebook_path" -r "$relay" --port="$port" \
-              -e "${encrypt^^}" -u "$from" -p "$secret" -s "$title" \
-              "$from" "$to" "Deliver \"${title}\""
+            # 循环每一个收件人，单独发送一封邮件
+            for to_addr in "${recipients[@]}"; do
+              # 去除邮箱前后多余空格
+              to_addr_trim=$(echo "$to_addr" | xargs)
+              if [ -z "$to_addr_trim" ]; then continue; fi
+              echo "Sending: \"$filename\" to $to_addr_trim"
+              calibre-smtp -a "$ebook_path" -r "$relay" --port="$port" \
+                -e "${encrypt^^}" -u "$from" -p "$secret" -s "$title" \
+                "$from" "$to_addr_trim" "Deliver \"${title}\""
+            done
           done < <(find "$output" -type f -name "*.${ext,,}" -print0)
           echo "All jobs done"
       - name: Storing Ebook
